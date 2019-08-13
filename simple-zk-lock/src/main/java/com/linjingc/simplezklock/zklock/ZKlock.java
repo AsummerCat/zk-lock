@@ -42,11 +42,7 @@ public class ZKlock implements Lock {
 
 
         try {
-            try {
-                if (currentPath.get().isEmpty()) ;
-            } catch (NullPointerException e) {
-                currentPath.set(this.zkClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(lockPath + "/"));
-            }
+            currentPath.set(this.zkClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(lockPath + "/"));
             List<String> childrens = this.zkClient.getChildren().forPath(lockPath);
             Collections.sort(childrens);
             if (currentPath.get().equals(lockPath + "/" + childrens.get(0))) {
@@ -68,7 +64,6 @@ public class ZKlock implements Lock {
     public void lock() {
         if (!tryLock()) {
             waiForLock();
-            lock();
         }
     }
 
