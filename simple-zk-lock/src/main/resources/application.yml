@@ -1,0 +1,19 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: simple-zk-lock
+
+
+#zk客户端配置重试次数
+curator:
+  retryCount: 5
+  #重试间隔时间
+  elapsedTimeMs: 5000
+  # zookeeper 地址
+  connectString: 127.0.0.1:2181
+  # session超时时间
+  sessionTimeoutMs: 60000
+  # 连接超时时间
+  connectionTimeoutMs: 5000
