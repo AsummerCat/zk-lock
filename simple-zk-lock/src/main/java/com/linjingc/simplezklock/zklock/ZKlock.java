@@ -26,8 +26,6 @@ public class ZKlock implements Lock {
 
     ThreadLocal<String> currentPath;
     ThreadLocal<String> beforePath;
-//    private volatile String currentPath;
-//    private volatile String beforePath;
 
     @Override
     public boolean tryLock() {
@@ -36,24 +34,22 @@ public class ZKlock implements Lock {
             if (zkClient.checkExists().forPath(lockPath) == null) {
                 System.out.println("初始化根节点==========>" + lockPath);
                 zkClient.create().creatingParentsIfNeeded().forPath(lockPath);
+                System.out.println("当前线程" + Thread.currentThread().getName() + "初始化根节点" + lockPath);
             }
-            System.out.println("当前线程" + Thread.currentThread().getName() + "初始化根节点" + lockPath);
-
         } catch (Exception e) {
+            throw new RuntimeException("构建根节点失败");
         }
 
-        if (currentPath.get().isEmpty()) {
-            try {
-                currentPath.set(this.zkClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(lockPath + "/"));
-            } catch (Exception e) {
-                return false;
-            }
-        }
+
         try {
-            //此处该如何获取所有的临时节点呢？如locks00004.而不是获取/locks/order中的order作为子节点？？
+            try {
+                if (currentPath.get().isEmpty()) ;
+            } catch (NullPointerException e) {
+                currentPath.set(this.zkClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(lockPath + "/"));
+            }
             List<String> childrens = this.zkClient.getChildren().forPath(lockPath);
             Collections.sort(childrens);
-            if (currentPath.equals(lockPath + "/" + childrens.get(0))) {
+            if (currentPath.get().equals(lockPath + "/" + childrens.get(0))) {
                 System.out.println("当前线程获得锁" + currentPath.get());
                 return true;
             } else {
