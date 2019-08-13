@@ -7,6 +7,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * zk 初始化配置
+ *
+ * @author cxc
+ * @date 2019年8月13日18:33:28
+ */
 @Configuration
 public class CuratorConfiguration {
 
