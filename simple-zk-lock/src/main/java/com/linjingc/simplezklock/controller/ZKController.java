@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 @RestController
 @RequestMapping("/zk")
 public class ZKController {
@@ -21,19 +24,16 @@ public class ZKController {
 
     @GetMapping("/lock")
     public Boolean getLock() throws Exception {
-
-//        zklock.lock();
-//
-//        zklock.unlock();
+        ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
+        cachedThreadPool.execute(() -> {
+            zklock.lock();
+        });
+        Thread.sleep(1000);
         for (int i = 0; i < 10; i++) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    zklock.lock();
-
-                    zklock.unlock();
-                }
-            }).start();
+            cachedThreadPool.execute(() -> {
+                zklock.lock();
+                zklock.unlock();
+            });
         }
         return true;
     }
