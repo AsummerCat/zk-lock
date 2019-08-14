@@ -88,16 +88,10 @@ public class ZKlock {
 
     public void unlock() {
         try {
-            if (zkClient.checkExists().forPath(beforePath.get()) == null) {
                 zkClient.delete().guaranteed().deletingChildrenIfNeeded().forPath(currentPath.get());
                 System.out.println(currentPath.get() + "解锁成功");
                 currentPath.remove();
                 beforePath.remove();
-            } else {
-                System.out.println("解锁失败");
-            }
-
-
         } catch (Exception e) {
             //guaranteed()保障机制，若未删除成功，只要会话有效会在后台一直尝试删除
         }

@@ -25,9 +25,9 @@ public class ZKController {
     @GetMapping("/lock")
     public Boolean getLock() throws Exception {
         ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
-        cachedThreadPool.execute(() -> {
-            zklock.lock();
-        });
+//        cachedThreadPool.execute(() -> {
+//            zklock.lock();
+//        });
         Thread.sleep(1000);
         for (int i = 0; i < 10; i++) {
             cachedThreadPool.execute(() -> {
