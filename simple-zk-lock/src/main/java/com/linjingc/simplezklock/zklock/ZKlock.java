@@ -26,10 +26,16 @@ public class ZKlock {
     @Value("${curator.lockPath}")
     private String lockPath;
 
+    //当前节点
     ThreadLocal<String> currentPath = new ThreadLocal<>();
+    //前节点
     ThreadLocal<String> beforePath = new ThreadLocal<>();
 
-
+    /**
+     * 获取锁
+     *
+     * @return
+     */
     private boolean tryLock() {
         try {
             List<String> childrens = this.zkClient.getChildren().forPath(lockPath);
@@ -65,15 +71,17 @@ public class ZKlock {
         try {
             currentPath.set(zkClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(lockPath + "/"));
         } catch (Exception e) {
-            throw new RuntimeException("zk加锁失败");
+            throw new RuntimeException("zk创建锁节点失败");
         }
 
+        //检查是否获取成功锁 不成功阻塞线程
         checkLock();
     }
 
 
     /**
      * 检查是否获取锁
+     * 检查是否获取成功锁 不成功阻塞线程
      */
     private void checkLock() {
         //判断获取锁
@@ -88,15 +96,18 @@ public class ZKlock {
 
     public void unlock() {
         try {
-                zkClient.delete().guaranteed().deletingChildrenIfNeeded().forPath(currentPath.get());
-                System.out.println(currentPath.get() + "解锁成功");
-                currentPath.remove();
-                beforePath.remove();
+            zkClient.delete().guaranteed().deletingChildrenIfNeeded().forPath(currentPath.get());
+            System.out.println(currentPath.get() + "解锁成功");
+            currentPath.remove();
+            beforePath.remove();
         } catch (Exception e) {
             //guaranteed()保障机制，若未删除成功，只要会话有效会在后台一直尝试删除
         }
     }
 
+    /**
+     * 阻塞监听节点  锁等待
+     */
     private void waiForLock() {
         CountDownLatch cdl = new CountDownLatch(1);
         //创建监听器watch
@@ -127,6 +138,4 @@ public class ZKlock {
             }
         }
     }
-
-
 }
