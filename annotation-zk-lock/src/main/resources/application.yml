@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: simple-zk-lock
+    name: annotation-zk-lock
 
 
 #zk客户端配置重试次数
