@@ -49,10 +49,10 @@ public class LockInfoProvider {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         //根据自定义业务key 获取keyName
         String businessKeyName = businessKeyProvider.getKeyName(joinPoint, zkLock);
-        //拼接lockName
-        String lockName = LOCK_NAME_PREFIX + LOCK_NAME_SEPARATOR + getName(zkLock.name(), signature) + businessKeyName;
+        //拼接lockName地址
+        String lockPath = LOCK_NAME_PREFIX + LOCK_NAME_SEPARATOR + getName(zkLock.name(), signature)+LOCK_NAME_SEPARATOR +businessKeyName;
         //实例化锁
-        return new LockInfo(lockName);
+        return new LockInfo(lockPath);
     }
 
 

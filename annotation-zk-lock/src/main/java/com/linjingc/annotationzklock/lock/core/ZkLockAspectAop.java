@@ -39,13 +39,11 @@ public class ZkLockAspectAop {
     @Autowired
     private CuratorFramework zkClient;
 
-    //当前锁
+    /**
+     * 当前锁
+     */
     ThreadLocal<LockInfo> currentThreadLock = new ThreadLocal<>();
 
-    //当前节点
-    ThreadLocal<String> currentPath = new ThreadLocal<>();
-    //前节点
-    ThreadLocal<String> beforePath = new ThreadLocal<>();
 
 
     /**
@@ -64,17 +62,17 @@ public class ZkLockAspectAop {
         LockInfo lockInfo = lockInfoProvider.get(joinPoint, zkLock);
         try {
             //根节点的初始化放在构造函数里面不生效
-            if (zkClient.checkExists().forPath(lockInfo.getName()) == null) {
-                System.out.println("初始化根节点==========>" + lockInfo.getName());
-                zkClient.create().creatingParentsIfNeeded().forPath(lockInfo.getName());
-                System.out.println("当前线程" + Thread.currentThread().getName() + "初始化根节点" + lockInfo.getName());
+            if (zkClient.checkExists().forPath(lockInfo.getLockPath()) == null) {
+                System.out.println("初始化根节点==========>" + lockInfo.getLockPath());
+                zkClient.create().creatingParentsIfNeeded().forPath(lockInfo.getLockPath());
+                System.out.println("当前线程" + Thread.currentThread().getName() + "初始化根节点" + lockInfo.getLockPath());
             }
         } catch (Exception e) {
             throw new RuntimeException("构建根节点失败");
         }
         try {
             //创建临时节点
-            lockInfo.setName(zkClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(lockInfo.getName() + "/"));
+            lockInfo.setNode(zkClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(lockInfo.getLockPath() + "/"));
             currentThreadLock.set(lockInfo);
         } catch (Exception e) {
             throw new RuntimeException("zk创建锁节点失败");
@@ -102,10 +100,9 @@ public class ZkLockAspectAop {
 
     public void unlock() {
         try {
-            zkClient.delete().guaranteed().deletingChildrenIfNeeded().forPath(currentPath.get());
-            System.out.println(currentPath.get() + "解锁成功");
-            currentPath.remove();
-            beforePath.remove();
+            zkClient.delete().guaranteed().deletingChildrenIfNeeded().forPath(currentThreadLock.get().getLockPath()+currentThreadLock.get().getNode());
+            System.out.println(currentThreadLock.get().getLockPath()+currentThreadLock.get().getNode() + "解锁成功");
+            currentThreadLock.remove();
         } catch (Exception e) {
             //guaranteed()保障机制，若未删除成功，只要会话有效会在后台一直尝试删除
         }
@@ -117,7 +114,7 @@ public class ZkLockAspectAop {
     private void waiForLock() {
         CountDownLatch cdl = new CountDownLatch(1);
         //创建监听器watch
-        NodeCache nodeCache = new NodeCache(zkClient, beforePath.get());
+        NodeCache nodeCache = new NodeCache(zkClient, currentThreadLock.get().getLockPath());
         try {
             nodeCache.start(true);
             nodeCache.getListenable().addListener(new NodeCacheListener() {
@@ -132,7 +129,7 @@ public class ZkLockAspectAop {
         }
         //如果前一个节点还存在，则阻塞自己
         try {
-            if (zkClient.checkExists().forPath(beforePath.get()) != null) {
+            if (zkClient.checkExists().forPath(currentThreadLock.get().getLastNode()) != null) {
                 cdl.await();
             }
         } catch (Exception e) {
@@ -152,17 +149,17 @@ public class ZkLockAspectAop {
      */
     private boolean tryLock() {
         try {
-            List<String> childrens = this.zkClient.getChildren().forPath(lockPath);
+            List<String> childrens = this.zkClient.getChildren().forPath(currentThreadLock.get().getLockPath());
             Collections.sort(childrens);
-            if (currentPath.get().equals(lockPath + "/" + childrens.get(0))) {
-                System.out.println("当前线程获得锁" + currentPath.get());
+            if (currentThreadLock.get().getNode().equals(childrens.get(0))) {
+                System.out.println("当前线程获得锁" + currentThreadLock.get().getLockPath()+currentThreadLock.get().getNode());
                 return true;
             } else {
                 //取前一个节点
-                int curIndex = childrens.indexOf(currentPath.get().substring(lockPath.length() + 1));
+                int curIndex = childrens.indexOf(currentThreadLock.get().getNode().substring(currentThreadLock.get().getNode().length() + 1));
                 //如果是-1表示children里面没有该节点
-                beforePath.set(lockPath + "/" + childrens.get(curIndex - 1));
-                System.out.println("前一个节点:" + lockPath + "/" + childrens.get(curIndex - 1));
+                currentThreadLock.get().setLastNode(childrens.get(curIndex - 1));
+                System.out.println("前一个节点:" + childrens.get(curIndex - 1));
             }
         } catch (Exception e) {
             e.printStackTrace();

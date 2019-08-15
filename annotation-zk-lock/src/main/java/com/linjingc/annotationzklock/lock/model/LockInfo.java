@@ -12,9 +12,20 @@ import lombok.Data;
 public class LockInfo {
 
     /**
-     * 锁名称
+     * 当前锁节点
      */
-    private String name;
+    private String node;
+
+    /**
+     * 当前锁 前一节点
+     */
+    private String lastNode;
+
+
+    /**
+     * 当前锁的索引路径
+     */
+    private String lockPath;
 //    /**
 //     * 等待时间
 //     */
@@ -27,7 +38,7 @@ public class LockInfo {
     public LockInfo() {
     }
 
-    public LockInfo(String name) {
-        this.name = name;
+    public LockInfo(String lockPath) {
+        this.lockPath = lockPath;
     }
 }

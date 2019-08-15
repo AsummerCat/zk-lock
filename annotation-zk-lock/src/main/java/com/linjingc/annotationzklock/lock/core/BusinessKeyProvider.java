@@ -28,6 +28,8 @@ import java.util.List;
 @Component
 public class BusinessKeyProvider {
 
+    public static final String LOCK_NAME_SEPARATOR = "/";
+
     private ParameterNameDiscoverer nameDiscoverer = new DefaultParameterNameDiscoverer();
 
     private ExpressionParser parser = new SpelExpressionParser();
@@ -42,7 +44,7 @@ public class BusinessKeyProvider {
         List<String> parameterKeys = getParameterKey(method.getParameters(), joinPoint.getArgs());
         keyList.addAll(parameterKeys);
         //进行拼接
-        return StringUtils.collectionToDelimitedString(keyList, "", "/", "");
+        return StringUtils.collectionToDelimitedString(keyList, "", LOCK_NAME_SEPARATOR, "");
     }
 
     private Method getMethod(ProceedingJoinPoint joinPoint) {
