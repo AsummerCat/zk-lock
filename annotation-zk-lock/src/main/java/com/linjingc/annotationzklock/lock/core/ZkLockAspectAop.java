@@ -8,7 +8,10 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.zookeeper.CreateMode;
+import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,6 +88,35 @@ public class ZkLockAspectAop {
 
 
     /**
+     * 方法执行完毕 释放锁
+     *
+     * @param joinPoint
+     * @param
+     * @throws Throwable
+     */
+    @AfterReturning(value = "@annotation(zkLock)")
+    public void afterReturning(JoinPoint joinPoint, ZkLock zkLock) throws Throwable {
+        unlock();
+    }
+
+    /**
+     * 切面 异常处理
+     *
+     * @param joinPoint
+     * @param
+     * @param ex
+     * @throws Throwable
+     */
+    @AfterThrowing(value = "@annotation(zkLock)", throwing = "ex")
+    public void afterThrowing(JoinPoint joinPoint, ZkLock zkLock, Throwable ex) throws Throwable {
+        //释放锁
+        unlock();
+        throw ex;
+    }
+
+
+
+    /**
      * 检查是否获取锁
      * 检查是否获取成功锁 不成功阻塞线程
      */
@@ -114,7 +146,7 @@ public class ZkLockAspectAop {
     private void waiForLock() {
         CountDownLatch cdl = new CountDownLatch(1);
         //创建监听器watch
-        NodeCache nodeCache = new NodeCache(zkClient, currentThreadLock.get().getLockPath());
+        NodeCache nodeCache = new NodeCache(zkClient, currentThreadLock.get().getLastNode());
         try {
             nodeCache.start(true);
             nodeCache.getListenable().addListener(new NodeCacheListener() {
