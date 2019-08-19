@@ -20,7 +20,7 @@ public enum LockType {
     /**
      * 联锁
      */
-    MultiLock,
+    MultiLock;
 
     LockType() {
     }
