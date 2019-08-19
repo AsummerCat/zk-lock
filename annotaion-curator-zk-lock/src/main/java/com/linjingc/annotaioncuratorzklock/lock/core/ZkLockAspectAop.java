@@ -79,7 +79,7 @@ public class ZkLockAspectAop {
      */
     @AfterReturning(value = "@annotation(zkLock)")
     public void afterReturning(JoinPoint joinPoint, ZkLock zkLock) throws Throwable {
-        currentThreadLock.get().release();
+        releaseLock();
     }
 
     /**
@@ -92,10 +92,15 @@ public class ZkLockAspectAop {
      */
     @AfterThrowing(value = "@annotation(zkLock)", throwing = "ex")
     public void afterThrowing(JoinPoint joinPoint, ZkLock zkLock, Throwable ex) throws Throwable {
-        //释放锁
-        currentThreadLock.get().release();
+        releaseLock();
+
         throw ex;
     }
 
 
+
+    private void releaseLock() throws Throwable {
+        currentThreadLock.get().release();
+        currentThreadLock.remove();
+    }
 }
