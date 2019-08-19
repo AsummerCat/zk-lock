@@ -17,6 +17,7 @@
         <module>zk-demo</module>
         <module>simple-zk-lock</module>
         <module>annotation-zk-lock</module>
+        <module>annotaion-curator-zk-lock</module>
     </modules>
 
     <properties>
