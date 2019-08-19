@@ -2,12 +2,13 @@ package com.linjingc.annotationzklock.lock.core;
 
 
 import com.linjingc.annotationzklock.lock.annotaion.ZkLock;
+import com.linjingc.annotationzklock.lock.model.LockInfo;
 import lombok.extern.log4j.Log4j2;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import com.linjingc.annotationzklock.lock.model.LockInfo;
 
 
 /**
@@ -23,13 +24,12 @@ public class LockInfoProvider {
     /**
      * 锁的key根路径
      */
-    public static final String LOCK_NAME_PREFIX = "/Lock";
+
+    @Value("${curator.lockPath}")
+    private String LOCK_NAME_PREFIX;
     public static final String LOCK_NAME_SEPARATOR = "/";
 
 
-//    @Autowired
-//    private RedisLockConfig redisLockConfig;
-//
     /**
      * 自定义业务key
      */
@@ -50,7 +50,7 @@ public class LockInfoProvider {
         //根据自定义业务key 获取keyName
         String businessKeyName = businessKeyProvider.getKeyName(joinPoint, zkLock);
         //拼接lockName地址
-        String lockPath = LOCK_NAME_PREFIX + LOCK_NAME_SEPARATOR + getName(zkLock.name(), signature)+businessKeyName;
+        String lockPath = LOCK_NAME_PREFIX + LOCK_NAME_SEPARATOR + getName(zkLock.name(), signature) + businessKeyName;
         //实例化锁
         return new LockInfo(lockPath);
     }

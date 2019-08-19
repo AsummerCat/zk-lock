@@ -17,4 +17,4 @@ curator:
   sessionTimeoutMs: 60000
   # 连接超时时间
   connectionTimeoutMs: 5000
-  lockPath: /lock
+  lockPath: /Lock
