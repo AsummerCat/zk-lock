@@ -25,12 +25,12 @@ public @interface LockKey {
      */
     LockType lockType() default LockType.Mutex;
 
-    /**
-     * 尝试加锁，最多等待时间
-     *
-     * @return waitTime
-     */
-    long waitTime() default Long.MIN_VALUE;
+//    /**
+//     * 尝试加锁，最多等待时间
+//     *
+//     * @return waitTime
+//     */
+//    long waitTime() default Long.MIN_VALUE;
 
     /**
      * 自定义业务key

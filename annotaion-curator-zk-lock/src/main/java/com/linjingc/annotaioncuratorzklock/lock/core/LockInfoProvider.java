@@ -1,6 +1,7 @@
 package com.linjingc.annotaioncuratorzklock.lock.core;
 
 
+import com.linjingc.annotaioncuratorzklock.lock.LockType;
 import com.linjingc.annotaioncuratorzklock.lock.annotaion.ZkLock;
 import com.linjingc.annotaioncuratorzklock.lock.model.LockInfo;
 import lombok.extern.log4j.Log4j2;
@@ -45,6 +46,8 @@ public class LockInfoProvider {
      * @return
      */
     public LockInfo get(ProceedingJoinPoint joinPoint, ZkLock zkLock) {
+        //获取到锁类型
+        LockType type = zkLock.lockType();
         //获取到切面的信息
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         //根据自定义业务key 获取keyName
@@ -52,7 +55,7 @@ public class LockInfoProvider {
         //拼接lockName地址
         String lockPath = LOCK_NAME_PREFIX + LOCK_NAME_SEPARATOR + getName(zkLock.name(), signature) + businessKeyName;
         //实例化锁
-        return new LockInfo(lockPath);
+        return new LockInfo(lockPath,type);
     }
 
 

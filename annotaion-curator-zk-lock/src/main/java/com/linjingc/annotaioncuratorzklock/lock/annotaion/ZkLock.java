@@ -1,5 +1,7 @@
 package com.linjingc.annotaioncuratorzklock.lock.annotaion;
 
+import com.linjingc.annotaioncuratorzklock.lock.LockType;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -29,6 +31,18 @@ public @interface ZkLock {
      * @return keys
      */
     String[] keys() default {};
+    /**
+     * 锁类型，默认可重入锁
+     *
+     * @return lockType
+     */
+    LockType lockType() default LockType.Mutex;
+    /**
+     * 尝试加锁，最多等待时间
+     *
+     * @return waitTime
+     */
+    long waitTime() default Long.MIN_VALUE;
 
 
 }

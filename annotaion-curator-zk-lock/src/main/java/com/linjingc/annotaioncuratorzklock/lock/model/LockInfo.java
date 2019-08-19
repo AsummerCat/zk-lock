@@ -38,14 +38,13 @@ public class LockInfo {
     private LockType type;
 
 
-
-
     public LockInfo() {
 
     }
 
-    public LockInfo(String lockPath) {
+    public LockInfo(String lockPath, LockType type) {
         this.lockPath = lockPath;
+        this.type = type;
     }
 
 

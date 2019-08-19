@@ -52,6 +52,7 @@ public class SemaphoreMutexLock implements Lock {
         if (acquiredInThisProcess) {
             try {
                 interProcessLock.release();
+                System.out.println("解锁成功");
                 return true;
             } catch (Exception e) {
                 log.error("zk解锁错误", e);
