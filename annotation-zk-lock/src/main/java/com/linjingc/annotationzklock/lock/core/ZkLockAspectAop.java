@@ -75,7 +75,7 @@ public class ZkLockAspectAop {
         }
         try {
             //创建临时节点
-            lockInfo.setNode(zkClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(lockInfo.getLockPath() + "/"));
+            lockInfo.setNode(zkClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(lockInfo.getLockPath() + "/").replace(lockInfo.getLockPath()+LockInfo.SEPARATOR_CHARACTER,""));
             currentThreadLock.set(lockInfo);
         } catch (Exception e) {
             throw new RuntimeException("zk创建锁节点失败");
@@ -132,8 +132,8 @@ public class ZkLockAspectAop {
 
     public void unlock() {
         try {
-            zkClient.delete().guaranteed().deletingChildrenIfNeeded().forPath(currentThreadLock.get().getLockPath()+currentThreadLock.get().getNode());
-            System.out.println(currentThreadLock.get().getLockPath()+currentThreadLock.get().getNode() + "解锁成功");
+            zkClient.delete().guaranteed().deletingChildrenIfNeeded().forPath(currentThreadLock.get().getNodePath());
+            System.out.println(currentThreadLock.get().getNodePath() + "解锁成功");
             currentThreadLock.remove();
         } catch (Exception e) {
             //guaranteed()保障机制，若未删除成功，只要会话有效会在后台一直尝试删除
@@ -146,14 +146,14 @@ public class ZkLockAspectAop {
     private void waiForLock() {
         CountDownLatch cdl = new CountDownLatch(1);
         //创建监听器watch
-        NodeCache nodeCache = new NodeCache(zkClient, currentThreadLock.get().getLastNode());
+        NodeCache nodeCache = new NodeCache(zkClient,currentThreadLock.get().getLastNodePath());
         try {
             nodeCache.start(true);
             nodeCache.getListenable().addListener(new NodeCacheListener() {
 
                 @Override
                 public void nodeChanged() throws Exception {
-                    System.out.println(nodeCache.getPath() + "节点监听事件触发");
+                    System.out.println(currentThreadLock.get().getLastNodePath() + "节点监听事件触发");
                     cdl.countDown();
                 }
             });
@@ -184,11 +184,11 @@ public class ZkLockAspectAop {
             List<String> childrens = this.zkClient.getChildren().forPath(currentThreadLock.get().getLockPath());
             Collections.sort(childrens);
             if (currentThreadLock.get().getNode().equals(childrens.get(0))) {
-                System.out.println("当前线程获得锁" + currentThreadLock.get().getLockPath()+currentThreadLock.get().getNode());
+                System.out.println("当前线程获得锁" + currentThreadLock.get().getNodePath());
                 return true;
             } else {
                 //取前一个节点
-                int curIndex = childrens.indexOf(currentThreadLock.get().getNode().substring(currentThreadLock.get().getNode().length() + 1));
+                int curIndex = childrens.indexOf(currentThreadLock.get().getNodePath().substring(currentThreadLock.get().getLockPath().length() + 1));
                 //如果是-1表示children里面没有该节点
                 currentThreadLock.get().setLastNode(childrens.get(curIndex - 1));
                 System.out.println("前一个节点:" + childrens.get(curIndex - 1));
