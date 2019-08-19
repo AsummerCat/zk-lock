@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Data
 @Log4j2
-public class SemaphoreMutexLock implements Lock {
+public class InterProcessMutexLock implements Lock {
 
     private InterProcessLock interProcessLock;
 
@@ -25,7 +25,7 @@ public class SemaphoreMutexLock implements Lock {
 
     private CuratorFramework curatorFramework;
 
-    public SemaphoreMutexLock(CuratorFramework curatorFramework, LockInfo info) {
+    public InterProcessMutexLock(CuratorFramework curatorFramework, LockInfo info) {
         this.curatorFramework = curatorFramework;
         this.lockInfo = info;
     }
