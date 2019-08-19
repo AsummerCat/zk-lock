@@ -5,6 +5,7 @@ import com.linjingc.annotaioncuratorzklock.lock.annotaion.ZkLock;
 import com.linjingc.annotaioncuratorzklock.lock.basiclock.Lock;
 import com.linjingc.annotaioncuratorzklock.lock.basiclock.LockFactory;
 import com.linjingc.annotaioncuratorzklock.lock.model.LockInfo;
+import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.apache.curator.framework.CuratorFramework;
 import org.aspectj.lang.JoinPoint;
@@ -27,7 +28,6 @@ import org.springframework.stereotype.Component;
  */
 @Aspect
 @Component
-//声明首先加载入spring
 @Order(0)
 @Log4j2
 public class ZkLockAspectAop {
@@ -40,6 +40,10 @@ public class ZkLockAspectAop {
      * 当前锁
      */
     private ThreadLocal<Lock> currentThreadLock = new ThreadLocal<>();
+    /**
+     * 该锁是否已经处理释放操作
+     */
+    private ThreadLocal<LockRes> currentThreadLockRes = new ThreadLocal<>();
 
 
     /**
@@ -64,7 +68,11 @@ public class ZkLockAspectAop {
             }
         }
 
+
+
         currentThreadLock.set(lock);
+        //设置当前锁状态
+        currentThreadLockRes.set(new LockRes(lockInfo, false));
 
         return joinPoint.proceed();
     }
@@ -79,7 +87,10 @@ public class ZkLockAspectAop {
      */
     @AfterReturning(value = "@annotation(zkLock)")
     public void afterReturning(JoinPoint joinPoint, ZkLock zkLock) throws Throwable {
-        currentThreadLock.get().release();
+        //释放锁
+        releaseLock(zkLock, joinPoint);
+        //清理线程副本
+        cleanUpThreadLocal();
     }
 
     /**
@@ -93,9 +104,54 @@ public class ZkLockAspectAop {
     @AfterThrowing(value = "@annotation(zkLock)", throwing = "ex")
     public void afterThrowing(JoinPoint joinPoint, ZkLock zkLock, Throwable ex) throws Throwable {
         //释放锁
-        currentThreadLock.get().release();
+        releaseLock(zkLock, joinPoint);
+        //清理线程副本
+        cleanUpThreadLocal();
         throw ex;
     }
 
+
+    /**
+     * 当前线程锁状态
+     */
+    @Data
+    private class LockRes {
+
+        private LockInfo lockInfo;
+        /**
+         * 当前锁是否执行释放操作过  true 执行 false 未执行
+         */
+        private Boolean useState;
+
+        LockRes(LockInfo lockInfo, Boolean useState) {
+            this.lockInfo = lockInfo;
+            this.useState = useState;
+        }
+    }
+
+    /**
+     * 清除当前线程副本
+     */
+    private void cleanUpThreadLocal() {
+        currentThreadLockRes.remove();
+        currentThreadLock.remove();
+    }
+
+    /**
+     * 释放锁 避免重复释放锁
+     * 如: 执行完毕释放一次 throw时又释放一次
+     */
+    private void releaseLock(ZkLock zkLock, JoinPoint joinPoint) throws Throwable {
+        LockRes lockRes = currentThreadLockRes.get();
+        //未执行过释放锁操作
+        if (!lockRes.getUseState()) {
+            boolean releaseRes = currentThreadLock.get().release();
+            // avoid release lock twice when exception happens below
+            lockRes.setUseState(true);
+            //if (!releaseRes) {
+            //    handleReleaseTimeout(catLock, lockRes.getLockInfo(), joinPoint);
+            //}
+        }
+    }
 
 }
