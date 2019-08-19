@@ -50,10 +50,7 @@ public class LockInfoProvider {
         //根据自定义业务key 获取keyName
         String businessKeyName = businessKeyProvider.getKeyName(joinPoint, zkLock);
         //拼接lockName地址
-        String lockPath = LOCK_NAME_PREFIX + LOCK_NAME_SEPARATOR + getName(zkLock.name(), signature);
-        if(businessKeyName!=null&&businessKeyName!=""){
-            lockPath=lockPath+LOCK_NAME_SEPARATOR +businessKeyName;
-        }
+        String lockPath = LOCK_NAME_PREFIX + LOCK_NAME_SEPARATOR + getName(zkLock.name(), signature)+businessKeyName;
         //实例化锁
         return new LockInfo(lockPath);
     }
