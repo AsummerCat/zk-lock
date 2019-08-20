@@ -32,17 +32,6 @@ public class LockInfo {
     private String lockPath;
 
 
-
-
-//    /**
-//     * 等待时间
-//     */
-//    private long waitTime;
-//    /**
-//     * 续约时间 ->处理时间 达到该时间会自动解锁
-//     */
-//    private long leaseTime;
-
     public LockInfo() {
     }
 
