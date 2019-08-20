@@ -6,7 +6,7 @@ public enum LockType {
      */
     Mutex,
     /**
-     * 公平锁
+     * 公平锁 不可重入
      */
     SemaphoreMutex,
     /**

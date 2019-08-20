@@ -59,7 +59,8 @@ public class ZkLockAspectAop {
         //获取自定义锁信息
         LockInfo lockInfo = lockInfoProvider.get(joinPoint, zkLock);
         Lock lock = lockFactory.getLock(lockInfo);
-
+        //设置当前锁状态
+        currentThreadLockRes.set(new LockRes(lockInfo, false));
         //加锁
         boolean carryLock = lock.acquire();
         if (!carryLock) {
@@ -67,12 +68,11 @@ public class ZkLockAspectAop {
                 log.warn("Timeout while acquiring Lock({})", lockInfo.getNodePath());
             }
         }
-
+        System.out.println("加锁成功");
 
 
         currentThreadLock.set(lock);
-        //设置当前锁状态
-        currentThreadLockRes.set(new LockRes(lockInfo, false));
+
 
         return joinPoint.proceed();
     }
@@ -148,9 +148,10 @@ public class ZkLockAspectAop {
             boolean releaseRes = currentThreadLock.get().release();
             // avoid release lock twice when exception happens below
             lockRes.setUseState(true);
-            //if (!releaseRes) {
-            //    handleReleaseTimeout(catLock, lockRes.getLockInfo(), joinPoint);
-            //}
+            if (!releaseRes) {
+                System.out.println("aop解锁失败");
+//                handleReleaseTimeout(catLock, lockRes.getLockInfo(), joinPoint);
+            }
         }
     }
 

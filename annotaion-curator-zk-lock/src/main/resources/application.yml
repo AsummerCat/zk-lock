@@ -19,5 +19,5 @@ curator:
   connectionTimeoutMs: 5000
   # 锁节点的根地址
   lockPath: /Lock
-  # 锁默认等待时间
-  lockWaitTime: 15000
+  # 锁默认等待时间 (秒)
+  lockWaitTime: 15

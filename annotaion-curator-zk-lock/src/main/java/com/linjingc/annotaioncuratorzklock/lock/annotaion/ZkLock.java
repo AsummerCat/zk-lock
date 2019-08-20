@@ -36,9 +36,9 @@ public @interface ZkLock {
      *
      * @return lockType
      */
-    LockType lockType() default LockType.SemaphoreMutex;
+    LockType lockType() default LockType.Mutex;
     /**
-     * 尝试加锁，最多等待时间
+     * 尝试加锁，最多等待时间(秒)
      *
      * @return waitTime
      */
