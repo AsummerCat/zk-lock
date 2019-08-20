@@ -4,19 +4,24 @@ package com.linjingc.annotaioncuratorzklock.lock.core;
 import com.linjingc.annotaioncuratorzklock.lock.annotaion.ZkLock;
 import com.linjingc.annotaioncuratorzklock.lock.basiclock.Lock;
 import com.linjingc.annotaioncuratorzklock.lock.basiclock.LockFactory;
+import com.linjingc.annotaioncuratorzklock.lock.exception.CatLockInvocationException;
 import com.linjingc.annotaioncuratorzklock.lock.model.LockInfo;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
-import org.apache.curator.framework.CuratorFramework;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 
 /**
@@ -66,6 +71,13 @@ public class ZkLockAspectAop {
         if (!carryLock) {
             if (log.isWarnEnabled()) {
                 log.warn("Timeout while acquiring Lock({})", lockInfo.getNodePath());
+            }
+            //如果有自定义的超时策略
+            if (!StringUtils.isEmpty(zkLock.customLockTimeoutStrategy())) {
+                return handleCustomLockTimeout(zkLock.customLockTimeoutStrategy(), joinPoint);
+            } else {
+                //否则使用配置的超时处理策略
+                zkLock.lockTimeoutStrategy().handle(lockInfo, lock, joinPoint);
             }
         }
         System.out.println("加锁成功");
@@ -149,9 +161,82 @@ public class ZkLockAspectAop {
             // avoid release lock twice when exception happens below
             lockRes.setUseState(true);
             if (!releaseRes) {
-                System.out.println("aop解锁失败");
-//                handleReleaseTimeout(catLock, lockRes.getLockInfo(), joinPoint);
+                handleReleaseTimeout(zkLock, lockRes.getLockInfo(), joinPoint);
             }
+        }
+    }
+
+
+    /**
+     * 处理自定义加锁超时
+     */
+    private Object handleCustomLockTimeout(String lockTimeoutHandler, JoinPoint joinPoint) throws Throwable {
+
+        // prepare invocation context
+        Method currentMethod = ((MethodSignature) joinPoint.getSignature()).getMethod();
+        Object target = joinPoint.getTarget();
+        Method handleMethod = null;
+        try {
+            handleMethod = joinPoint.getTarget().getClass().getDeclaredMethod(lockTimeoutHandler, currentMethod.getParameterTypes());
+            handleMethod.setAccessible(true);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalArgumentException("Illegal annotation param customLockTimeoutStrategy", e);
+        }
+        Object[] args = joinPoint.getArgs();
+
+        // invoke
+        Object res = null;
+        try {
+            res = handleMethod.invoke(target, args);
+        } catch (IllegalAccessException e) {
+            throw new CatLockInvocationException("Fail to invoke custom lock timeout handler: " + lockTimeoutHandler, e);
+        } catch (InvocationTargetException e) {
+            throw e.getTargetException();
+        }
+
+        return res;
+    }
+
+    /**
+     * 处理释放锁时已超时
+     */
+    private void handleReleaseTimeout(ZkLock zkLock, LockInfo lockInfo, JoinPoint joinPoint) throws Throwable {
+
+        if (log.isWarnEnabled()) {
+            log.warn("Timeout while release Lock({})", lockInfo.getNode());
+        }
+
+        if (!StringUtils.isEmpty(zkLock.customReleaseTimeoutStrategy())) {
+
+            handleCustomReleaseTimeout(zkLock.customReleaseTimeoutStrategy(), joinPoint);
+
+        } else {
+            zkLock.releaseTimeoutStrategy().handle(lockInfo);
+        }
+    }
+
+    /**
+     * 处理自定义释放锁时已超时
+     */
+    private void handleCustomReleaseTimeout(String releaseTimeoutHandler, JoinPoint joinPoint) throws Throwable {
+
+        Method currentMethod = ((MethodSignature) joinPoint.getSignature()).getMethod();
+        Object target = joinPoint.getTarget();
+        Method handleMethod = null;
+        try {
+            handleMethod = joinPoint.getTarget().getClass().getDeclaredMethod(releaseTimeoutHandler, currentMethod.getParameterTypes());
+            handleMethod.setAccessible(true);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalArgumentException("Illegal annotation param customReleaseTimeoutStrategy", e);
+        }
+        Object[] args = joinPoint.getArgs();
+
+        try {
+            handleMethod.invoke(target, args);
+        } catch (IllegalAccessException e) {
+            throw new CatLockInvocationException("Fail to invoke custom release timeout handler: " + releaseTimeoutHandler, e);
+        } catch (InvocationTargetException e) {
+            throw e.getTargetException();
         }
     }
 
