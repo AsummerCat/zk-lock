@@ -37,14 +37,18 @@ public class LockInfo {
      */
     private LockType type;
 
+    private Long waitTime;
+
 
     public LockInfo() {
 
     }
 
-    public LockInfo(String lockPath, LockType type) {
+    public LockInfo(String lockPath, LockType type,Long waitTime) {
         this.lockPath = lockPath;
         this.type = type;
+        this.waitTime=waitTime;
+
     }
 
 

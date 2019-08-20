@@ -34,7 +34,7 @@ public class WriteLock implements Lock {
     public boolean acquire() {
         interProcessLock = new InterProcessReadWriteLock(curatorFramework, lockInfo.getLockPath());
         try {
-            boolean acquire = interProcessLock.writeLock().acquire(1000, TimeUnit.SECONDS);
+            boolean acquire = interProcessLock.writeLock().acquire(lockInfo.getWaitTime(), TimeUnit.SECONDS);
             if (acquire) {
                 return true;
             }

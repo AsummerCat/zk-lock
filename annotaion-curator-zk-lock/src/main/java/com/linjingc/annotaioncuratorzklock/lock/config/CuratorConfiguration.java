@@ -43,6 +43,8 @@ public class CuratorConfiguration {
     @Value("${curator.connectionTimeoutMs}")
     private int connectionTimeoutMs;
 
+
+
     @Bean(initMethod = "start")
     public CuratorFramework curatorFramework() {
 

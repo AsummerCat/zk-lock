@@ -36,7 +36,7 @@ public class InterProcessSemaphoreMutexLock implements Lock {
     public boolean acquire() {
         interProcessLock = new InterProcessSemaphoreMutex(curatorFramework, lockInfo.getLockPath());
         try {
-            boolean acquire = interProcessLock.acquire(1000, TimeUnit.SECONDS);
+            boolean acquire = interProcessLock.acquire(lockInfo.getWaitTime(), TimeUnit.SECONDS);
             if (acquire) {
                 return true;
             }

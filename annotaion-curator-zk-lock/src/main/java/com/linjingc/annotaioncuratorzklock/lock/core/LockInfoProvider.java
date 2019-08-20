@@ -29,6 +29,11 @@ public class LockInfoProvider {
     @Value("${curator.lockPath}")
     private String LOCK_NAME_PREFIX;
     public static final String LOCK_NAME_SEPARATOR = "/";
+    /**
+     * 加锁等待时间
+     */
+    @Value("${curator.lockWaitTime}")
+    private Long lockWaitTime;
 
 
     /**
@@ -54,8 +59,11 @@ public class LockInfoProvider {
         String businessKeyName = businessKeyProvider.getKeyName(joinPoint, zkLock);
         //拼接lockName地址
         String lockPath = LOCK_NAME_PREFIX + LOCK_NAME_SEPARATOR + getName(zkLock.name(), signature) + businessKeyName;
+
+        //获取等待时间 不设置则根据配置的lockWaitTime的生成
+        long waitTime = getWaitTime(zkLock);
         //实例化锁
-        return new LockInfo(lockPath,type);
+        return new LockInfo(lockPath,type,waitTime);
     }
 
 
@@ -75,5 +83,16 @@ public class LockInfoProvider {
         }
     }
 
+
+    /**
+     * 如果默认是最大等待时间 则使用配置项内的时间 否则 使用自定义的时间
+     *
+     * @param lock
+     * @return
+     */
+    private long getWaitTime(ZkLock lock) {
+        return lock.waitTime() == Long.MIN_VALUE ?
+                lockWaitTime : lock.waitTime();
+    }
 
 }
