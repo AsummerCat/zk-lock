@@ -6,8 +6,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.locks.ReentrantLock;
-
 /**
  * 工厂模式 根据lock的类型自动加载 对应的锁类型
  *
@@ -23,13 +21,13 @@ public class LockFactory {
     public Lock getLock(LockInfo lockInfo) {
         switch (lockInfo.getType()) {
             case SemaphoreMutex:
-                return new SemaphoreMutexLock(curatorFramework, lockInfo);
-//            case Read:
-//                return new ReadLock(curatorFramework, lockInfo);
-//            case Write:
-//                return new WriteLock(curatorFramework, lockInfo);
+                return new InterProcessSemaphoreMutexLock(curatorFramework, lockInfo);
+            case Read:
+                return new ReadLock(curatorFramework, lockInfo);
+            case Write:
+                return new WriteLock(curatorFramework, lockInfo);
             default:
-                return new SemaphoreMutexLock(curatorFramework, lockInfo);
+                return new InterProcessMutexLock(curatorFramework, lockInfo);
         }
     }
 

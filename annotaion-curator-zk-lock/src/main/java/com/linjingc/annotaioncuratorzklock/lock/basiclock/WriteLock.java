@@ -4,28 +4,27 @@ import com.linjingc.annotaioncuratorzklock.lock.model.LockInfo;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessLock;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock;
 
 import java.util.concurrent.TimeUnit;
 
 /**
- * 可重入锁
+ * 读写锁 写锁
  *
  * @author cxc
  * @date 2019年8月19日17:10:22
  */
 @Data
 @Log4j2
-public class SemaphoreMutexLock implements Lock {
+public class WriteLock implements Lock {
 
-    private InterProcessLock interProcessLock;
+    private InterProcessReadWriteLock interProcessLock;
 
     private final LockInfo lockInfo;
 
     private CuratorFramework curatorFramework;
 
-    public SemaphoreMutexLock(CuratorFramework curatorFramework, LockInfo info) {
+    public WriteLock(CuratorFramework curatorFramework, LockInfo info) {
         this.curatorFramework = curatorFramework;
         this.lockInfo = info;
     }
@@ -33,9 +32,9 @@ public class SemaphoreMutexLock implements Lock {
 
     @Override
     public boolean acquire() {
-        interProcessLock = new InterProcessMutex(curatorFramework, lockInfo.getLockPath());
+        interProcessLock = new InterProcessReadWriteLock(curatorFramework, lockInfo.getLockPath());
         try {
-            boolean acquire = interProcessLock.acquire(1000, TimeUnit.SECONDS);
+            boolean acquire = interProcessLock.writeLock().acquire(1000, TimeUnit.SECONDS);
             if (acquire) {
                 return true;
             }
@@ -48,10 +47,10 @@ public class SemaphoreMutexLock implements Lock {
 
     @Override
     public boolean release() {
-        boolean acquiredInThisProcess = interProcessLock.isAcquiredInThisProcess();
+        boolean acquiredInThisProcess = interProcessLock.writeLock().isAcquiredInThisProcess();
         if (acquiredInThisProcess) {
             try {
-                interProcessLock.release();
+                interProcessLock.writeLock().release();
                 System.out.println("解锁成功");
                 return true;
             } catch (Exception e) {
